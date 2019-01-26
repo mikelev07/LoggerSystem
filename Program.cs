@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 
 namespace LoggerSystem
 {
@@ -6,31 +7,66 @@ namespace LoggerSystem
     {
         public static void Main(string[] args)
         {
+             Logger textLogger = new TextLogger();
+             textLogger.InvokeLog();
 
-            Logger textLogger = new TextLogger();
-            textLogger.InvokeLog();
+             Console.WriteLine();
+
+             Logger searchLogger = new SearchLogger();
+             searchLogger.InvokeLog();
+
+             Console.WriteLine();
+
+             textLogger = FileLogger.Default;
+             textLogger.InvokeLog();
+
+             LogStore logStore = new LogStore();
+             //textLogger.Description = "Text_log";
+             searchLogger.Description = "Search_log";
+
+             logStore[0] = textLogger;
+             logStore[1] = searchLogger;
+             logStore[2] = new FileLogger { Description = "PUT /Home/Index" };
+             logStore[3] = new TextLogger { Description = "GET /Home/GetText" };
+
+             Console.WriteLine();
+
+             foreach (Logger log in logStore)
+             {
+                Console.WriteLine(log?.Description ?? FileLogger.Default.Description);
+             }
 
             Console.WriteLine();
 
-            Logger searchLogger = new SearchLogger();
-            searchLogger.InvokeLog();
+            Account<int> acc1 = new Account<int> { Id = 1, Title = "New_account1" };
+            Account<int> acc2 = new Account<int> { Id = 2, Title = "New_account2" };
 
-            Console.WriteLine();
-
-            textLogger = FileLogger.Default;
-            textLogger.InvokeLog();
-
-            LogStore logStore = new LogStore();
-            logStore[0] = textLogger;
-            logStore[1] = searchLogger;
-
-
-            Console.WriteLine(logStore[0].Title);
+            UniversalLogger<Logger, string> transaction1 = new UniversalLogger<Logger, string>
+            {
+                FromAccount = textLogger,
+                ToAccount = searchLogger,
+                Code = "123123123"
+            };
 
             Console.ReadKey();
         }
     }
 
+    public class UniversalLogger<T,C> where T : Logger
+    {
+        public T FromAccount { get; set; }
+        public T ToAccount { get; set; }   
+        public C Code { get; set; }        
+    }
+
+    public class Account<T>
+    {
+        public static T session;
+        public T Id { get; set; }
+        public string Title { get; set; }
+    }
+
+    public class TransactionLog { }
 
     public class LogStore
     {
@@ -48,8 +84,31 @@ namespace LoggerSystem
             }
         }
 
-    }
+        public Logger this[string description]
+        {
+            get
+            {
+                Logger logger = null;
+                foreach (var log in loggers)
+                {
+                    if (log?.Description == description)
+                    {
+                        logger = log;
+                        break;
+                    }
+                }
+                return logger;
+            }
+        }
 
+        public IEnumerator GetEnumerator()
+        {
+            for (int i = 0; i < loggers.Length; i++)
+            {
+                yield return loggers[i];
+            }
+        }
+    }
 
     /// <summary>
     /// Logger.
@@ -97,12 +156,7 @@ namespace LoggerSystem
     class FileLogger : Logger
     {
         public FileLogger() { }
-
-        /// <summary>
-        /// The default instance.
-        /// </summary>
-        private static readonly FileLogger _default = new FileLogger();
-        public static FileLogger Default { get { return _default; } }
+        public static FileLogger Default { get; } = new FileLogger() { Description = "default log" };
 
         #region Functions
         protected bool IsCreate()
