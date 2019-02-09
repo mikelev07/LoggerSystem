@@ -7,6 +7,8 @@ namespace LoggerSystem
     {
         public static void Main(string[] args)
         {
+
+            
              Logger textLogger = new TextLogger();
              textLogger.InvokeLog();
 
@@ -48,6 +50,7 @@ namespace LoggerSystem
                 Code = "123123123"
             };
 
+            Console.WriteLine(logStore[11]);
             Console.ReadKey();
         }
     }
@@ -76,6 +79,8 @@ namespace LoggerSystem
         {
             get
             {
+                if (index > loggers.Length)
+                    throw new IndexOutOfRangeException();
                 return loggers[index];
             }
             set
